@@ -1,0 +1,10 @@
+# Binarios generados por Go
+*.exe
+*.out
+*.test
+
+# Carpetas de compilación (en caso de ejecutar build)
+pkg/
+
+# Archivos del sistema
+.DS_Store
