@@ -1,6 +1,12 @@
 package main 
-import "fmt"
+import ("fmt"
+		"os")
 
 func main(){
-	fmt.Println("SSL labs Checker iniciando..")
+	if len(os.Args)<2 {
+	fmt.Println("Uso: go run main.go <dominio>")
+	return 
+	}
+	domain := os.Args[1]
+	fmt.Println("Dominio a analizar", domain)
 }
