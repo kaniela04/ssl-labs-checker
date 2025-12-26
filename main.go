@@ -26,6 +26,29 @@ type AnalyzeResponse struct {
 	Host string `json:"host"`
 	Status string `json:"status"`
 	Endpoints []endpoint `json:"endpoints"`
+	StatusMessage string     `json:"statusMessage"`
+}
+
+func handleHTTPError(code int) bool{
+	switch code {
+	case 200:
+		return true
+	case 400:
+		fmt.Println("400: Solicitud incorrecta (dominio incorrecto) )")
+	case 429:
+		fmt.Println("429: Demasiadas solicitudes (limite de tasa excedido) espere 1 minuto...")
+		time.Sleep(60 * time.Second)
+	case 500:
+		fmt.Println("500: Error interno del servidor de SSL Labs, intente nuevamente mas tarde")
+	case 503:
+		fmt.Println("503: Servicio no disponible, intente nuevamente mas tarde")
+	case 529:
+		fmt.Println("529: servidor sobrecargado - el servicio esta siendo utilizado en exceso, espere un minuto...")
+		time.Sleep(60 * time.Second)
+	default:
+		fmt.Println("Error desconocido:", code)
+	}
+	return false
 }
 
 func main(){ // entry point
@@ -55,6 +78,10 @@ func main(){ // entry point
 		return 
 	}
 
+	if !handleHTTPError(response.StatusCode){
+		return
+	}
+
 	//close the coneccion when the function ends
 	body, _ := io.ReadAll(response.Body)
 	response.Body.Close()
@@ -64,8 +91,19 @@ func main(){ // entry point
 
 	//read the response body
 	// Polling
-	for analyze.Status != "READY" {
+	for  {
 		fmt.Println("Estado actual:", analyze.Status)
+
+		if analyze.Status == "READY" {
+			break
+		}
+
+		//wait before polling again
+		if analyze.Status == "ERROR" {
+			fmt.Println("Error en el análisis:", analyze.StatusMessage)
+			return
+		}
+
 		time.Sleep(15 * time.Second)
 
 		response, err = http.Get(baseURL)
@@ -75,9 +113,12 @@ func main(){ // entry point
 			continue
 		}
 
+		if !handleHTTPError(response.StatusCode){
+			continue
+		}
+
 		body, _ = io.ReadAll(response.Body)
 		response.Body.Close()
-
 		json.Unmarshal(body, &analyze)
 	}
     /**
@@ -108,7 +149,7 @@ func main(){ // entry point
 	fmt.Println("Análisis completado...")
 	fmt.Println("Dominio analizado (host):", analyze.Host)
 	fmt.Println("Estado del análisis(status):", analyze.Status)
-	fmt.Println("\n Resultados de segutidad TLS/SSL por endpoint:")
+	fmt.Println("\n Resultados de seguridad TLS/SSL por endpoint:")
 	for _, ep := range analyze.Endpoints {
 		fmt.Println("IP del endpoint analizado:", ep.IPAddress)
 		fmt.Println("Calificación del endpoint (grade):", ep.Grade)
