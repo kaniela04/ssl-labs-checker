@@ -1,35 +1,38 @@
-package main 
-import ("fmt" //print to console
-		"os" // read args
-		"net/http" // make http requests
-		"io" // read response body
-		"encoding/json"// parse json response
-		"time"
-		
-	)
+package main
+
+import (
+	"encoding/json" // parse json response
+	"fmt"           //print to console
+	"io"            // read response body
+	"net/http"      // make http requests
+	"os"            // read args
+	"time"
+)
+
 /**
-//structure of /info 
+//structure of /info
 	type InfoResponse struct {
 		EngineVersion string `json:"engineVersion"`
-		
+
 	}
 **/
 
-//struc of endpoint /analyze
+// struc of endpoint /analyze
 type endpoint struct {
-	IPAddress string `json:"ipAddress"`
-	Grade string `json:"grade"`
+	IPAddress     string `json:"ipAddress"`
+	Grade         string `json:"grade"`
 	StatusMessage string `json:"statusMessage"`
 }
-//struc of /analyze 
+
+// struc of /analyze
 type AnalyzeResponse struct {
-	Host string `json:"host"`
-	Status string `json:"status"`
-	Endpoints []endpoint `json:"endpoints"`
+	Host          string     `json:"host"`
+	Status        string     `json:"status"`
+	Endpoints     []endpoint `json:"endpoints"`
 	StatusMessage string     `json:"statusMessage"`
 }
 
-func handleHTTPError(code int) bool{
+func handleHTTPError(code int) bool {
 	switch code {
 	case 200:
 		return true
@@ -51,16 +54,16 @@ func handleHTTPError(code int) bool{
 	return false
 }
 
-func main(){ // entry point
+func main() { // entry point
 	// validate that the user enters a domain as an argument
-	if len(os.Args)<2 {
-	fmt.Println("Uso: go run main.go <dominio>")
-	return 
+	if len(os.Args) < 2 {
+		fmt.Println("Uso: go run main.go <dominio>")
+		return
 	}
 
-	// get the domain from the command line arguments 
+	// get the domain from the command line arguments
 	domain := os.Args[1]
-	baseURL := "https://api.ssllabs.com/api/v2/analyze?host=" + domain 
+	baseURL := "https://api.ssllabs.com/api/v2/analyze?host=" + domain
 	/**
 	//call the SSL Labs API to analyze the domain on /info endpoint
 	url := "https://api.ssllabs.com/api/v2/info"
@@ -68,30 +71,30 @@ func main(){ // entry point
 
 	//call the SSL Labs API to analyze the domain on /analyze endpoint
 	//url := "https://api.ssllabs.com/api/v2/analyze?host=" + domain + "&startNew=on"
-	
-	// start analysis 
+
+	// start analysis
 	url := baseURL + "&startNew=on"
 	//the response from the API
 	response, err := http.Get(url)
-	if err !=nil {
+	if err != nil {
 		fmt.Println("Error al iniciar el analisis: ", err)
-		return 
+		return
 	}
 
-	if !handleHTTPError(response.StatusCode){
+	if !handleHTTPError(response.StatusCode) {
 		return
 	}
 
 	//close the coneccion when the function ends
 	body, _ := io.ReadAll(response.Body)
 	response.Body.Close()
-	
+
 	var analyze AnalyzeResponse
 	json.Unmarshal(body, &analyze)
 
 	//read the response body
 	// Polling
-	for  {
+	for {
 		fmt.Println("Estado actual:", analyze.Status)
 
 		if analyze.Status == "READY" {
@@ -113,7 +116,7 @@ func main(){ // entry point
 			continue
 		}
 
-		if !handleHTTPError(response.StatusCode){
+		if !handleHTTPError(response.StatusCode) {
 			continue
 		}
 
@@ -121,20 +124,20 @@ func main(){ // entry point
 		response.Body.Close()
 		json.Unmarshal(body, &analyze)
 	}
-    /**
+	/**
 	//parse the JSON response
 	var info InfoResponse
 	err = json.Unmarshal(body, &info)
 	if err !=nil{
 		fmt.Println("Error al pasear el JSON: ", err)
-		return 
+		return
 	}
 
 	fmt.Println("Versión de la API:", info.EngineVersion)
 	**/
 
 	/**
-	//show the response 
+	//show the response
 	fmt.Println("Respuesta de la API de SSL Labs/info:")
 	//convert text to readable format
 	fmt.Println(string(body))
