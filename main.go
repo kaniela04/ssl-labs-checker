@@ -15,9 +15,9 @@ import (
  * each evaluated independently.
  */
 type endpoint struct {
-	IPAddress     string `json:"ipAddress"`
-	Grade         string `json:"grade"`
-	StatusMessage string `json:"statusMessage"`
+	IPAddress     string `json:"ipAddress"` // IP address of the endpoint
+	Grade         string `json:"grade"` // Overall security grade assigned by SSL Labs
+	StatusMessage string `json:"statusMessage"` // Status message for the endpoint analysis
 }
 
 /**
@@ -25,10 +25,10 @@ type endpoint struct {
  * the SSL Labs /analyze endpoint.
  */
 type AnalyzeResponse struct {
-	Host          string     `json:"host"`
-	Status        string     `json:"status"`
-	Endpoints     []endpoint `json:"endpoints"`
-	StatusMessage string     `json:"statusMessage"`
+	Host          string     `json:"host"` // Domain being analyzed
+	Status        string     `json:"status"` // Current status of the analysis
+	Endpoints     []endpoint `json:"endpoints"` // List of endpoints analyzed
+	StatusMessage string     `json:"statusMessage"`// Message providing additional status information
 }
 
 /**
@@ -141,6 +141,7 @@ func main() { // entry point
 	fmt.Println("Dominio analizado (host):", analyze.Host)
 	fmt.Println("Estado del análisis(status):", analyze.Status)
 	fmt.Println("\n Resultados de seguridad TLS por endpoint:")
+	// Iterate over each endpoint and print its results
 	for _, ep := range analyze.Endpoints {
 		fmt.Println("IP del endpoint analizado:", ep.IPAddress)
 		fmt.Println("Calificación del endpoint (grade):", ep.Grade)
