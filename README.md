@@ -6,12 +6,7 @@ CLI tool written in Go that analyzes the TLS/SSL security of a domain using the 
 ```bash
 go run main.go google.com
 
-
 ---
-
-###  4. Ejemplo de salida
-
-```md
 ## Example output
 
 Estado actual: IN_PROGRESS  
@@ -23,6 +18,7 @@ Estado: READY
 Endpoint IP: 172.217.215.139  
 Grade: B  
 Status: Ready
+
 ## Technical decisions
 
 - Polling every 15 seconds to avoid overloading the SSL Labs API
@@ -36,3 +32,19 @@ Status: Ready
 - SSL Labs may close connections during long polling
 - Only basic endpoint data is displayed (IP, grade, status)
 
+#Error Response Status Codes
+The following status codes are used:
+
+400 - invocation error (e.g., invalid parameters)
+429 - client request rate too high or too many new assessments too fast
+500 - internal error
+503 - the service is not available (e.g., down for maintenance)
+529 - the service is overloaded
+
+# SSL LABS RATING REMINDER
+A+,A,A- -> Excellent security
+B -> Good
+C/D -> Fair / Poor
+F -> Very poor
+T -> Certificate not trusted
+M -> Certificate name does not match

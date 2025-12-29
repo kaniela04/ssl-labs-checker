@@ -10,21 +10,20 @@ import (
 )
 
 /**
-//structure of /info
-	type InfoResponse struct {
-		EngineVersion string `json:"engineVersion"`
-
-	}
-**/
-
-// struc of endpoint /analyze
+ * Endpoint represents a single server endpoint returned by the SSL Labs
+ * /analyze API. A domain can have multiple endpoints (IP addresses),
+ * each evaluated independently.
+ */
 type endpoint struct {
 	IPAddress     string `json:"ipAddress"`
 	Grade         string `json:"grade"`
 	StatusMessage string `json:"statusMessage"`
 }
 
-// struc of /analyze
+/**
+ * AnalyzeResponse represents the main response structure returned by
+ * the SSL Labs /analyze endpoint.
+ */
 type AnalyzeResponse struct {
 	Host          string     `json:"host"`
 	Status        string     `json:"status"`
@@ -32,6 +31,12 @@ type AnalyzeResponse struct {
 	StatusMessage string     `json:"statusMessage"`
 }
 
+/**
+ * handleHTTPError processes HTTP status codes returned by the SSL Labs API.
+ *
+ * @param code HTTP status code returned by the API
+ * @return bool Returns true if execution can continue, false otherwise
+ */
 func handleHTTPError(code int) bool {
 	switch code {
 	case 200:
@@ -54,6 +59,11 @@ func handleHTTPError(code int) bool {
 	return false
 }
 
+/**
+ * main is the entry point of the application.
+ * It validates input, starts the SSL analysis, polls the API until
+ * completion, and prints the final TLS/SSL security results.
+ */
 func main() { // entry point
 	// validate that the user enters a domain as an argument
 	if len(os.Args) < 2 {
@@ -61,18 +71,13 @@ func main() { // entry point
 		return
 	}
 
-	// get the domain from the command line arguments
+	// Retrieve domain from command-line arguments
 	domain := os.Args[1]
-	baseURL := "https://api.ssllabs.com/api/v2/analyze?host=" + domain
-	/**
-	//call the SSL Labs API to analyze the domain on /info endpoint
-	url := "https://api.ssllabs.com/api/v2/info"
-	**/
 
-	//call the SSL Labs API to analyze the domain on /analyze endpoint
-	//url := "https://api.ssllabs.com/api/v2/analyze?host=" + domain + "&startNew=on"
+	// base URL for SSL Labs API
+	baseURL := "https://api.ssllabs.com/api/v2/analyze?host=" + domain + "&all=done"
 
-	// start analysis
+	// start a new analysis
 	url := baseURL + "&startNew=on"
 	//the response from the API
 	response, err := http.Get(url)
@@ -81,82 +86,65 @@ func main() { // entry point
 		return
 	}
 
+	// Handle HTTP-level errors
 	if !handleHTTPError(response.StatusCode) {
 		return
 	}
 
-	//close the coneccion when the function ends
+	// Read initial response body
 	body, _ := io.ReadAll(response.Body)
 	response.Body.Close()
 
 	var analyze AnalyzeResponse
 	json.Unmarshal(body, &analyze)
 
-	//read the response body
-	// Polling
+	/**
+	 * Polling loop:
+	 * Repeatedly queries the API until the analysis status is READY or ERROR.
+	 * A delay is applied between requests to respect API rate limits.
+	 */
 	for {
 		fmt.Println("Estado actual:", analyze.Status)
 
+		// Exit loop when analysis is completed
 		if analyze.Status == "READY" {
 			break
 		}
 
-		//wait before polling again
+		// Stop execution if the analysis fails
 		if analyze.Status == "ERROR" {
 			fmt.Println("Error en el análisis:", analyze.StatusMessage)
 			return
 		}
-
+		// Wait before the next polling attempt
 		time.Sleep(15 * time.Second)
 
+		// Poll the API for updated analysis status
 		response, err = http.Get(baseURL)
 		if err != nil {
 			fmt.Println("Error en polling temporalmente, reintentando en unos segundos...:", err)
 			time.Sleep(30 * time.Second)
 			continue
 		}
-
+		// Handle HTTP-level errors
 		if !handleHTTPError(response.StatusCode) {
 			continue
 		}
-
+		// Read and parse the response body
 		body, _ = io.ReadAll(response.Body)
 		response.Body.Close()
 		json.Unmarshal(body, &analyze)
 	}
-	/**
-	//parse the JSON response
-	var info InfoResponse
-	err = json.Unmarshal(body, &info)
-	if err !=nil{
-		fmt.Println("Error al pasear el JSON: ", err)
-		return
-	}
-
-	fmt.Println("Versión de la API:", info.EngineVersion)
-	**/
-
-	/**
-	//show the response
-	fmt.Println("Respuesta de la API de SSL Labs/info:")
-	//convert text to readable format
-	fmt.Println(string(body))
-
-	//warning of variable not used
-	_=domain
-	//print the domain to analyze
-	fmt.Println("Dominio a analizar", domain)
-	**/
 
 	//print the analyze results
 	fmt.Println("Análisis completado...")
 	fmt.Println("Dominio analizado (host):", analyze.Host)
 	fmt.Println("Estado del análisis(status):", analyze.Status)
-	fmt.Println("\n Resultados de seguridad TLS/SSL por endpoint:")
+	fmt.Println("\n Resultados de seguridad TLS por endpoint:")
 	for _, ep := range analyze.Endpoints {
 		fmt.Println("IP del endpoint analizado:", ep.IPAddress)
 		fmt.Println("Calificación del endpoint (grade):", ep.Grade)
-		fmt.Println("Mensaje de estado (statusMessage):", ep.StatusMessage)
+		fmt.Println("Estado del análisis (status):", ep.StatusMessage)
 
 	}
 }
