@@ -1,5 +1,5 @@
 # SSL Labs Go Checker
-CLI tool written in Go that analyzes the TLS/SSL security of a domain using the SSL Labs API.
+CLI tool written in Go that analyzes the TLS security of a domain using the SSL Labs API.
 
 ## How to run
 
